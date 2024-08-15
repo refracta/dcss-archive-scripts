@@ -7,7 +7,7 @@ This script is created to allow viewing ttyrec files from the CNC server via the
 ```bash
 location / {
     fancyindex on;
-    sub_filter '</body>' '<script src="script.js"></script></body>';
+    sub_filter '</body>' '<script src="https://cdn.jsdelivr.net/gh/refracta/dcss-ttyrec-player/script.js"></script></body>';
 }
 ```
 
