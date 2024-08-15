@@ -2,6 +2,9 @@ if (location.pathname.includes('ttyrec')) {
     const list = document.querySelectorAll('.link');
     let player;
 
+    const scriptElement = document.currentScript;
+    const baseURL = scriptElement.src.substring(0, scriptElement.src.lastIndexOf('/'));
+
     function loadCSS(url) {
         return new Promise((resolve, reject) => {
             const link = document.createElement('link');
@@ -79,7 +82,11 @@ if (location.pathname.includes('ttyrec')) {
         }
     }
 
-    Promise.all([loadCSS('./asciinema-player.css'), loadScript('./asciinema-player.min.js'), loadScript('./bz2.js')]).then(() => {
+    Promise.all([
+        loadCSS(`${baseURL}/asciinema-player.css`),
+        loadScript(`${baseURL}/asciinema-player.min.js`),
+        loadScript(`${baseURL}/bz2.js`)
+    ]).then(() => {
         for (const element of list) {
             const a = element.querySelector('a');
             if (a.href.endsWith('.ttyrec') || a.href.endsWith('.ttyrec.bz2')) {
