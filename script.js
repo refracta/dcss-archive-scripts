@@ -1,5 +1,5 @@
-const pathname = location.pathname;
-if (pathname.includes('ttyrec')) {
+const paths = location.pathname.split('/').filter(p => p);
+if (paths.length > 2 && paths[0] === 'ttyrec') {
     const list = document.querySelectorAll('.link');
     let player;
 
@@ -101,7 +101,7 @@ if (pathname.includes('ttyrec')) {
     }).catch(error => {
         console.error('Error loading resources:', error);
     });
-} else if (pathname.includes('rcfiles')) {
+} else if (paths.length === 1 && paths[0] === 'rcfiles') {
     const params = new URLSearchParams(document.location.search);
     const user = params.get("user");
     if(user) {
