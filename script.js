@@ -1,4 +1,5 @@
-if (location.pathname.includes('ttyrec')) {
+const pathname = location.pathname;
+if (pathname.includes('ttyrec')) {
     const list = document.querySelectorAll('.link');
     let player;
 
@@ -100,4 +101,43 @@ if (location.pathname.includes('ttyrec')) {
     }).catch(error => {
         console.error('Error loading resources:', error);
     });
+} else if (pathname.includes('rcfiles')) {
+    const params = new URLSearchParams(document.location.search);
+    const user = params.get("user");
+    if(user) {
+        document.querySelector('h1').textContent = document.title = `${user}'s rcfiles`
+        let rcfileLinks = Array.from(document.querySelectorAll('a')).filter(e => e.textContent.startsWith('crawl-')).map(e=>({name: e.textContent.slice(0, -1), url: `${e.href}${user}.rc`, tag: e}));
+        rcfileLinks.sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+        
+            if (nameA === 'crawl-git') return -1;
+            if (nameB === 'crawl-git') return 1;
+        
+            const crawlRegex = /^crawl-(\d+\.\d+)$/;
+            const matchA = nameA.match(crawlRegex);
+            const matchB = nameB.match(crawlRegex);
+        
+            if (matchA && matchB) {
+                return parseFloat(matchB[1]) - parseFloat(matchA[1]);
+            }
+        
+            if (matchA) return -1;
+            if (matchB) return 1;
+        
+            return 0;
+        });
+    	
+        const table = document.querySelector('table');
+        Array.from(table.querySelectorAll('tbody tr')).forEach(e => e.remove())
+        for (const link of rcfileLinks) {
+            const container = document.createElement('tbody');
+            container.innerHTML = `<tr><td class="link"><a href=""></a></td><td>-</td><td>-</td></tr>`;
+            const linkTag = container.querySelector('.link a');
+            linkTag.href = link.url;
+            linkTag.textContent = `${user}.rc`;
+            linkTag.parentNode.append(` (${link.name})`);
+            table.appendChild(container.querySelector('tr'));
+        }
+    }
 }
