@@ -1,5 +1,9 @@
-const paths = location.pathname.split('/').filter(p => p);
-if (paths.length > 2 && paths[0] === 'ttyrec') {
+const paths = location.pathname.split('/').filter(path => path);
+if (paths.length >= 1 && paths[0] === 'ttyrec') {
+	const params = new URLSearchParams(document.location.search);
+    const file = params.get("file");
+	const time = params.get("time");
+	
     const list = document.querySelectorAll('.link');
     let player;
 
@@ -33,7 +37,7 @@ if (paths.length > 2 && paths[0] === 'ttyrec') {
             .then(arrayBuffer => bz2.decompress(new Uint8Array(arrayBuffer)));
     }
 
-    function initPlayer(data) {
+    function initPlayer(data, time) {
         player?.dispose();
 
         const playerDiv = document.createElement('div');
@@ -67,19 +71,22 @@ if (paths.length > 2 && paths[0] === 'ttyrec') {
             playerDiv.appendChild(closeButton);
         });
         player.play();
+        if(!isNaN(time)) {
+            player.seek(time);
+        }
     }
 
-    function handlePlayButtonClick(url, isCompressed) {
+    function handlePlayButtonClick(url, isCompressed, time) {
         if (isCompressed) {
             fetchAndDecompress(url).then(decompressedData => {
                 const blob = new Blob([decompressedData], {type: 'application/octet-stream'});
                 const decompressedUrl = URL.createObjectURL(blob);
-                initPlayer(decompressedUrl);
+                initPlayer(decompressedUrl, time);
             }).catch(error => {
                 console.error('Failed to decompress file:', error);
             });
         } else {
-            initPlayer(url);
+            initPlayer(url, time);
         }
     }
 
@@ -90,12 +97,17 @@ if (paths.length > 2 && paths[0] === 'ttyrec') {
     ]).then(() => {
         for (const element of list) {
             const a = element.querySelector('a');
-            if (a.href.endsWith('.ttyrec') || a.href.endsWith('.ttyrec.bz2')) {
+            const isTTYREC = a.href.endsWith('.ttyrec');
+            const isCompressedTTYREC = a.href.endsWith('.ttyrec.bz2');
+            if (isTTYREC || isCompressedTTYREC) {
                 const playButton = document.createElement('button');
                 playButton.textContent = 'Play';
                 playButton.style.marginLeft = '1em';
-                playButton.onclick = () => handlePlayButtonClick(a.href, a.href.endsWith('.ttyrec.bz2'));
+                playButton.onclick = () => handlePlayButtonClick(a.href, isCompressedTTYREC);
                 element.appendChild(playButton);
+                if(file === a.textContent) {
+                    handlePlayButtonClick(a.href, isCompressedTTYREC, time);
+                }
             }
         }
     }).catch(error => {
