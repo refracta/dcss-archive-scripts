@@ -3,7 +3,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
 	const params = new URLSearchParams(document.location.search);
     const file = params.get("file");
 	const time = params.get("time");
-	
+
     const list = document.querySelectorAll('.link');
     let player;
 
@@ -106,7 +106,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
                 playButton.onclick = () => handlePlayButtonClick(a.href, isCompressedTTYREC);
                 element.appendChild(playButton);
                 if(file === a.textContent) {
-                    handlePlayButtonClick(a.href, isCompressedTTYREC, time);
+                    handlePlayButtonClick(a.href, isCompressedTTYREC, time || 0);
                 }
             }
         }
@@ -122,24 +122,24 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         rcfileLinks.sort((a, b) => {
             const nameA = a.name.toLowerCase();
             const nameB = b.name.toLowerCase();
-        
+
             if (nameA === 'crawl-git') return -1;
             if (nameB === 'crawl-git') return 1;
-        
+
             const crawlRegex = /^crawl-(\d+\.\d+)$/;
             const matchA = nameA.match(crawlRegex);
             const matchB = nameB.match(crawlRegex);
-        
+
             if (matchA && matchB) {
                 return parseFloat(matchB[1]) - parseFloat(matchA[1]);
             }
-        
+
             if (matchA) return -1;
             if (matchB) return 1;
-        
+
             return 0;
         });
-    	
+
         const table = document.querySelector('table');
         Array.from(table.querySelectorAll('tbody tr')).forEach(e => e.remove())
         for (const link of rcfileLinks) {
