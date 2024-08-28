@@ -147,8 +147,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
             container.innerHTML = `<tr><td class="link"><a href=""></a></td><td>-</td><td>-</td></tr>`;
             const linkTag = container.querySelector('.link a');
             linkTag.href = link.url;
-            linkTag.textContent = `${user}.rc`;
-            linkTag.parentNode.append(` (${link.name})`);
+            linkTag.textContent = `${link.name}/${user}.rc`;
             table.appendChild(container.querySelector('tr'));
         }
     }
