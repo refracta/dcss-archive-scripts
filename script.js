@@ -179,7 +179,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         list.style.display = 'none';
 
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {cache: "no-store"});
             const reader = response.body.getReader();
             const contentLength = +response.headers.get('Content-Length');
 
