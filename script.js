@@ -184,7 +184,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         } : acc, {}));
         let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
         const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
-        desiredOrder.filter(key => desiredKeys.includes(key));
+        desiredOrder = desiredOrder.filter(key => desiredKeys.includes(key));
         const columnDefs = [{
             headerName: '#',
             valueGetter: 'node.rowIndex + 1',
