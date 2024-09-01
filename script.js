@@ -182,8 +182,9 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         data = data.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
             ...acc, [val[0]]: val[1].replace(/::/g, ':')
         } : acc, {}));
-        const desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
-
+        let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
+        const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
+        desiredOrder.filter(key => desiredKeys.includes(key));
         const columnDefs = [{
             headerName: '#',
             valueGetter: 'node.rowIndex + 1',
@@ -191,7 +192,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
             suppressMenu: true,
             sortable: false,
             filter: false
-        }, ...Object.keys(data[0]).filter(field => desiredOrder.includes(field)).map(field => {
+        }, ...desiredOrder.map(field => {
             const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
             return {
                 field: field,
