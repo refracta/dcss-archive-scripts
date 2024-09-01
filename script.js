@@ -173,18 +173,39 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
             list.style.display = '';
             h1.textContent = h1OriginalText;
         });
-
-        h1.textContent = url.split('/').slice(-2).join('/');
+        const fileName = url.split('/').slice(-2).join('/');
+        h1.textContent = `${fileName} (Preparing...)`;
         document.body.appendChild(myGridElement);
         list.style.display = 'none';
-        let data = await fetch(url)
-            .then(response => response.text());
-        data = data.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
+
+        const response = await fetch(url);
+        const reader = response.body.getReader();
+        const contentLength = +response.headers.get('Content-Length');
+
+        let receivedLength = 0;
+        let chunks = [];
+        while (true) {
+            const {done, value} = await reader.read();
+            if (done) {
+                break;
+            }
+            chunks.push(value);
+            receivedLength += value.length;
+            h1.textContent = `${fileName} (${(receivedLength / contentLength * 100).toFixed(2)}% of ${Math.round(contentLength / 1024)} KB)`;
+        }
+        h1.textContent = `${fileName} (Processing...)`;
+
+        const blob = new Blob(chunks);
+        const dataText = await blob.text();
+
+        let data = dataText.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
             ...acc, [val[0]]: val[1].replace(/::/g, ':')
         } : acc, {}));
+
         let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
         const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
         desiredOrder = desiredOrder.filter(key => desiredKeys.includes(key));
+
         const columnDefs = [{
             headerName: '#',
             valueGetter: 'node.rowIndex + 1',
@@ -223,6 +244,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         };
 
         agGrid.createGrid(myGridElement, gridOptions);
+        h1.textContent = `${fileName}`;
     }
 
     (async () => {
