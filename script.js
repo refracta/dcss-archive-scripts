@@ -252,7 +252,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
     }
 
     (async () => {
-        await loadScript('https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js');
+        await loadScript('https://cdn.jsdelivr.net/npm/ag-grid-community@32.1.0/dist/ag-grid-community.min.js');
         const list = document.querySelectorAll('.link');
         for (const element of list) {
             const a = element.querySelector('a');
