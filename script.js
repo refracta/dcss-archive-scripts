@@ -1,35 +1,36 @@
 const paths = location.pathname.split('/').filter(path => path);
+
+function loadCSS(url) {
+    return new Promise((resolve, reject) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = url;
+        link.onload = () => resolve(url);
+        document.head.appendChild(link);
+    });
+}
+
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = () => resolve(url);
+        document.body.appendChild(script);
+    });
+}
+
 if (paths.length >= 1 && paths[0] === 'ttyrec') {
-	const params = new URLSearchParams(document.location.search);
+    const params = new URLSearchParams(document.location.search);
     const file = params.get("file");
-	const time = params.get("time");
+    const time = params.get("time");
 
     const list = document.querySelectorAll('.link');
     let player;
 
     const scriptElement = document.currentScript;
     const baseURL = scriptElement.src.substring(0, scriptElement.src.lastIndexOf('/'));
-
-    function loadCSS(url) {
-        return new Promise((resolve, reject) => {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.type = 'text/css';
-            link.href = url;
-            link.onload = () => resolve(url);
-            document.head.appendChild(link);
-        });
-    }
-
-    function loadScript(url) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.async = true;
-            script.onload = () => resolve(url);
-            document.body.appendChild(script);
-        });
-    }
 
     function fetchAndDecompress(url) {
         return fetch(url)
@@ -71,7 +72,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
             playerDiv.appendChild(closeButton);
         });
         player.play();
-        if(!isNaN(time)) {
+        if (!isNaN(time)) {
             player.seek(time);
         }
     }
@@ -90,11 +91,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         }
     }
 
-    Promise.all([
-        loadCSS(`${baseURL}/asciinema-player.css`),
-        loadScript(`${baseURL}/asciinema-player.min.js`),
-        loadScript(`${baseURL}/bz2.js`)
-    ]).then(() => {
+    Promise.all([loadCSS(`${baseURL}/asciinema-player.css`), loadScript(`${baseURL}/asciinema-player.min.js`), loadScript(`${baseURL}/bz2.js`)]).then(() => {
         for (const element of list) {
             const a = element.querySelector('a');
             const isTTYREC = a.href.endsWith('.ttyrec');
@@ -105,7 +102,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
                 playButton.style.marginLeft = '1em';
                 playButton.onclick = () => handlePlayButtonClick(a.href, isCompressedTTYREC);
                 element.appendChild(playButton);
-                if(file === a.textContent) {
+                if (file === a.textContent) {
                     handlePlayButtonClick(a.href, isCompressedTTYREC, time || 0);
                 }
             }
@@ -116,9 +113,11 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
 } else if (paths.length === 1 && paths[0] === 'rcfiles') {
     const params = new URLSearchParams(document.location.search);
     const user = params.get("user");
-    if(user) {
+    if (user) {
         document.querySelector('h1').textContent = document.title = `${user}'s rcfiles`
-        let rcfileLinks = Array.from(document.querySelectorAll('a')).filter(e => e.textContent.startsWith('crawl-')).map(e=>({name: e.textContent.slice(0, -1), url: `${e.href}${user}.rc`, tag: e}));
+        let rcfileLinks = Array.from(document.querySelectorAll('a')).filter(e => e.textContent.startsWith('crawl-')).map(e => ({
+            name: e.textContent.slice(0, -1), url: `${e.href}${user}.rc`, tag: e
+        }));
         rcfileLinks.sort((a, b) => {
             const nameA = a.name.toLowerCase();
             const nameB = b.name.toLowerCase();
@@ -151,4 +150,96 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
             table.appendChild(container.querySelector('tr'));
         }
     }
+} else if (paths.length === 2 && paths[0] === 'meta') {
+    const params = new URLSearchParams(document.location.search);
+    const file = params.get("file");
+
+    const h1 = document.querySelector('h1');
+    const list = document.querySelector('#list');
+    const h1OriginalText = h1.textContent;
+
+    async function handleViewer(url) {
+        const myGridElement = document.createElement('div');
+        myGridElement.id = 'myGrid';
+        myGridElement.className = 'ag-theme-quartz';
+        myGridElement.style.height = `${window.innerHeight * 0.8}px`;
+
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        document.body.append(closeButton);
+        closeButton.addEventListener('click', function () {
+            myGridElement.remove();
+            closeButton.remove();
+            list.style.display = '';
+            h1.textContent = h1OriginalText;
+        });
+
+        h1.textContent = url.split('/').slice(-2).join('/');
+        document.body.appendChild(myGridElement);
+        list.style.display = 'none';
+        let data = await fetch(url)
+            .then(response => response.text());
+        data = data.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
+            ...acc, [val[0]]: val[1].replace(/::/g, ':')
+        } : acc, {}));
+        const desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
+
+        const columnDefs = [{
+            headerName: '#',
+            valueGetter: 'node.rowIndex + 1',
+            width: 80,
+            suppressMenu: true,
+            sortable: false,
+            filter: false
+        }, ...Object.keys(data[0]).filter(field => desiredOrder.includes(field)).map(field => {
+            const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+            return {
+                field: field,
+                headerName: field,
+                valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
+                comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
+                filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+                sortable: true,
+                resizable: true, ...(field === 'sc' ? {sort: "desc"} : {})
+            };
+        }), ...Object.keys(data[0]).filter(field => !desiredOrder.includes(field)).map(field => {
+            const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+            return {
+                field: field,
+                headerName: field,
+                valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
+                comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
+                filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+                sortable: true,
+                resizable: true,
+            };
+        })];
+
+        const gridOptions = {
+            rowData: data, columnDefs: columnDefs, defaultColDef: {
+                sortable: true, filter: true, resizable: true,
+            }
+        };
+
+        agGrid.createGrid(myGridElement, gridOptions);
+    }
+
+    (async () => {
+        await loadScript('https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js');
+        const list = document.querySelectorAll('.link');
+        for (const element of list) {
+            const a = element.querySelector('a');
+            if (a.getAttribute('href') === '../') {
+                continue;
+            }
+            if (file === a.textContent) {
+                handleViewer(a.href);
+            }
+            const viewerButton = document.createElement('button');
+            viewerButton.textContent = 'Viewer (Beta)';
+            viewerButton.style.marginLeft = '1em';
+            viewerButton.onclick = () => handleViewer(a.href);
+            element.appendChild(viewerButton);
+        }
+    })();
 }
