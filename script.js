@@ -203,7 +203,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
                 ...acc, [val[0]]: val[1].replace(/::/g, ':')
             } : acc, {}));
 
-            let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
+            let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'vmsg', 'xl', 'turn', 'urune', 'end', 'v'];
             const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
             desiredOrder = desiredOrder.filter(key => desiredKeys.includes(key));
 
@@ -215,7 +215,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
                 sortable: false,
                 filter: false
             }, ...desiredOrder.map(field => {
-                const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+                const isNumeric = data.every(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
                 return {
                     field: field,
                     headerName: field,
@@ -226,7 +226,7 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
                     resizable: true, ...(field === 'sc' ? {sort: "desc"} : {})
                 };
             }), ...Object.keys(data[0]).filter(field => !desiredOrder.includes(field)).map(field => {
-                const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+                const isNumeric = data.every(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
                 return {
                     field: field,
                     headerName: field,
