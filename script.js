@@ -178,73 +178,77 @@ if (paths.length >= 1 && paths[0] === 'ttyrec') {
         document.body.appendChild(myGridElement);
         list.style.display = 'none';
 
-        const response = await fetch(url);
-        const reader = response.body.getReader();
-        const contentLength = +response.headers.get('Content-Length');
+        try {
+            const response = await fetch(url);
+            const reader = response.body.getReader();
+            const contentLength = +response.headers.get('Content-Length');
 
-        let receivedLength = 0;
-        let chunks = [];
-        while (true) {
-            const {done, value} = await reader.read();
-            if (done) {
-                break;
+            let receivedLength = 0;
+            let chunks = [];
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) {
+                    break;
+                }
+                chunks.push(value);
+                receivedLength += value.length;
+                h1.textContent = `${fileName} (${(receivedLength / contentLength * 100).toFixed(2)}% of ${Math.round(contentLength / 1024)} KB)`;
             }
-            chunks.push(value);
-            receivedLength += value.length;
-            h1.textContent = `${fileName} (${(receivedLength / contentLength * 100).toFixed(2)}% of ${Math.round(contentLength / 1024)} KB)`;
+            h1.textContent = `${fileName} (Processing...)`;
+
+            const blob = new Blob(chunks);
+            const dataText = await blob.text();
+
+            let data = dataText.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
+                ...acc, [val[0]]: val[1].replace(/::/g, ':')
+            } : acc, {}));
+
+            let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
+            const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
+            desiredOrder = desiredOrder.filter(key => desiredKeys.includes(key));
+
+            const columnDefs = [{
+                headerName: '#',
+                valueGetter: 'node.rowIndex + 1',
+                width: 80,
+                suppressMenu: true,
+                sortable: false,
+                filter: false
+            }, ...desiredOrder.map(field => {
+                const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+                return {
+                    field: field,
+                    headerName: field,
+                    valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
+                    comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
+                    filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+                    sortable: true,
+                    resizable: true, ...(field === 'sc' ? {sort: "desc"} : {})
+                };
+            }), ...Object.keys(data[0]).filter(field => !desiredOrder.includes(field)).map(field => {
+                const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
+                return {
+                    field: field,
+                    headerName: field,
+                    valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
+                    comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
+                    filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
+                    sortable: true,
+                    resizable: true,
+                };
+            })];
+
+            const gridOptions = {
+                rowData: data, columnDefs: columnDefs, defaultColDef: {
+                    sortable: true, filter: true, resizable: true,
+                }
+            };
+
+            agGrid.createGrid(myGridElement, gridOptions);
+            h1.textContent = `${fileName}`;
+        } catch (e) {
+            h1.textContent = `${fileName} (error)`;
         }
-        h1.textContent = `${fileName} (Processing...)`;
-
-        const blob = new Blob(chunks);
-        const dataText = await blob.text();
-
-        let data = dataText.split('\n').slice(0, -1).map(e => e.split(/(?<!:):(?!:)/g).map(s => s.split('=')).reduce((acc, val) => val[0] !== '' ? {
-            ...acc, [val[0]]: val[1].replace(/::/g, ':')
-        } : acc, {}));
-
-        let desiredOrder = ['sc', 'name', 'char', 'god', 'place', 'tmsg', 'xl', 'turn', 'urune', 'end', 'v'];
-        const desiredKeys = Object.keys(data[0]).filter(field => desiredOrder.includes(field));
-        desiredOrder = desiredOrder.filter(key => desiredKeys.includes(key));
-
-        const columnDefs = [{
-            headerName: '#',
-            valueGetter: 'node.rowIndex + 1',
-            width: 80,
-            suppressMenu: true,
-            sortable: false,
-            filter: false
-        }, ...desiredOrder.map(field => {
-            const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
-            return {
-                field: field,
-                headerName: field,
-                valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
-                comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
-                filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
-                sortable: true,
-                resizable: true, ...(field === 'sc' ? {sort: "desc"} : {})
-            };
-        }), ...Object.keys(data[0]).filter(field => !desiredOrder.includes(field)).map(field => {
-            const isNumeric = data.some(row => !isNaN(row[field]) && row[field] !== null && row[field] !== '');
-            return {
-                field: field,
-                headerName: field,
-                valueParser: isNumeric ? (params) => Number(params.newValue) : undefined,
-                comparator: isNumeric ? (valueA, valueB) => valueA - valueB : undefined,
-                filter: isNumeric ? 'agNumberColumnFilter' : 'agTextColumnFilter',
-                sortable: true,
-                resizable: true,
-            };
-        })];
-
-        const gridOptions = {
-            rowData: data, columnDefs: columnDefs, defaultColDef: {
-                sortable: true, filter: true, resizable: true,
-            }
-        };
-
-        agGrid.createGrid(myGridElement, gridOptions);
-        h1.textContent = `${fileName}`;
     }
 
     (async () => {
